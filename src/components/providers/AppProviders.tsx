@@ -22,9 +22,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           },
         })).concat(
           new HttpLink({
-            uri:
-              process.env.NEXT_PUBLIC_API_URL ??
-              "http://localhost:4000/graphql",
+            uri: `${process.env.NEXT_PUBLIC_API_URL}/graphql`,
           }),
         ),
         cache: new InMemoryCache(),
