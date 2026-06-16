@@ -6,8 +6,11 @@
   color-scheme: light;
 }
 
+html,
 body {
   margin: 0;
+  height: 100%;
+  overflow: hidden;
   background: #f3f5f8;
   color: #172033;
 }

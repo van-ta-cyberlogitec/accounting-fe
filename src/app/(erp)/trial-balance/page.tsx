@@ -78,7 +78,7 @@ export default function TrialBalancePage() {
         }
       />
       <Card>
-        <Space className="mb-4">
+        <Space style={{ marginBottom: 16 }}>
           <DatePicker.RangePicker
             value={range}
             onChange={(v) => v && setRange(v as [Dayjs, Dayjs])}

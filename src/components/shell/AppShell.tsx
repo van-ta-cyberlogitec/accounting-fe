@@ -5,12 +5,13 @@ import {
   BookOutlined,
   CalendarOutlined,
   DashboardOutlined,
+  LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ShopOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import { Button, Layout, Menu, Select, Space, Typography } from "antd";
+import { Button, Layout, Menu, Select, Typography } from "antd";
 import type { MenuProps } from "antd";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -114,6 +115,18 @@ function currentLabel(pathname: string): string {
   return "Accounting";
 }
 
+function getOpenKeys(pathname: string): string[] {
+  for (const item of items ?? []) {
+    if (!item || !("key" in item)) continue;
+    const children = "children" in item ? item.children : undefined;
+    for (const child of children ?? []) {
+      if (child && "key" in child && pathname.startsWith(String(child.key)))
+        return [String(item.key)];
+    }
+  }
+  return [];
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
@@ -124,51 +137,121 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!accessToken) router.replace("/login");
   }, [accessToken, router]);
+
   useEffect(() => {
     if (!company && data?.companiesForCurrentUser?.[0])
       setCompany(data.companiesForCurrentUser[0]);
   }, [company, data, setCompany]);
 
+  const defaultOpenKeys = getOpenKeys(pathname);
+
   return (
-    <Layout className="h-screen max-h-screen overflow-hidden">
+    <Layout style={{ height: "100vh", overflow: "hidden" }}>
+      {/* ── Sidebar ─────────────────────────────────────────────── */}
       <Layout.Sider
         collapsible
         collapsed={collapsed}
         trigger={null}
         width={240}
+        collapsedWidth={64}
+        style={{ overflow: "hidden" }}
       >
-        <div className={styles.brand}>
-          {collapsed ? "ERP" : "ERP Accounting"}
-        </div>
-        <div className="overflow-auto h-screen scrollable-element">
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[pathname]}
-            items={items}
-            onClick={({ key }) => router.push(key)}
-          />
+        {/* Inner flex-column wrapper — Ant Design Sider renders a plain <aside>
+             so we need this div to stack brand / scroll-menu / footer */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            overflow: "hidden",
+          }}
+        >
+          {/* Brand */}
+          <div className={styles.brand}>
+            <div className={styles.brandIcon}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path
+                  d="M2 14L6 10L9 13L13 7L16 10"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="16" cy="4" r="2" fill="white" opacity="0.7" />
+              </svg>
+            </div>
+            {!collapsed && (
+              <div className={styles.brandText}>
+                <span className={styles.brandTitle}>ERP Accounting</span>
+                <span className={styles.brandSub}>General Ledger</span>
+              </div>
+            )}
+          </div>
+
+          {/* Scrollable menu — flex:1 + min-height:0 makes this the scroll zone */}
+          <div className={styles.sidebarScroll}>
+            <Menu
+              theme="dark"
+              mode="inline"
+              selectedKeys={[pathname]}
+              defaultOpenKeys={defaultOpenKeys}
+              items={items}
+              onClick={({ key }) => router.push(key)}
+              style={{ border: "none", background: "transparent" }}
+            />
+          </div>
+
+          {/* Collapse toggle at bottom */}
+          <div className={styles.sidebarFooter}>
+            <button
+              className={styles.collapseBtn}
+              onClick={() => setCollapsed(!collapsed)}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              {!collapsed && (
+                <span className={styles.collapseBtnLabel}>Collapse</span>
+              )}
+            </button>
+          </div>
         </div>
       </Layout.Sider>
-      <Layout>
-        <Layout.Header className="flex items-center justify-between bg-white px-5 shadow-sm">
-          <Space>
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-            />
-            <Typography.Text strong>{currentLabel(pathname)}</Typography.Text>
-          </Space>
-          <Space>
+
+      {/* ── Main area: flex column, never scrolls itself ─────────── */}
+      <Layout
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          height: "100vh",
+        }}
+      >
+        {/* Header — sticky via CSS module */}
+        <Layout.Header
+          className={styles.header}
+          style={{ padding: 0, flexShrink: 0 }}
+        >
+          <div className={styles.headerLeft}>
+            <div className={styles.breadcrumb}>
+              <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                ERP
+              </Typography.Text>
+              <span className={styles.breadcrumbSeparator}>/</span>
+              <Typography.Text className={styles.pageTitle}>
+                {currentLabel(pathname)}
+              </Typography.Text>
+            </div>
+          </div>
+
+          <div className={styles.headerRight}>
             <Select
-              className="min-w-60"
+              className={styles.companySelect}
               value={company?.id}
               placeholder="Select company"
               options={(data?.companiesForCurrentUser ?? []).map(
                 (item: { id: string; code: string; name: string }) => ({
                   value: item.id,
-                  label: `${item.code} - ${item.name}`,
+                  label: `${item.code} – ${item.name}`,
                 }),
               )}
               onChange={(id) =>
@@ -178,8 +261,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   ),
                 )
               }
+              style={{ minWidth: 220 }}
             />
             <Button
+              className={styles.signOutBtn}
+              icon={<LogoutOutlined />}
               onClick={() => {
                 clear();
                 router.push("/login");
@@ -187,9 +273,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               Sign out
             </Button>
-          </Space>
+          </div>
         </Layout.Header>
-        <Layout.Content className={styles.content}>{children}</Layout.Content>
+
+        {/* Content — the ONLY scroll zone in the right panel */}
+        <Layout.Content className={styles.content}>
+          {children}
+        </Layout.Content>
       </Layout>
     </Layout>
   );
