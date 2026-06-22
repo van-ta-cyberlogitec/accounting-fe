@@ -133,10 +133,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { accessToken, company, setCompany, clear } = useSessionStore();
   const { data } = useQuery(COMPANIES, { skip: !accessToken });
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!accessToken) router.replace("/login");
-  }, [accessToken, router]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !accessToken) {
+      router.replace("/login");
+    }
+  }, [mounted, accessToken, router]);
 
   useEffect(() => {
     if (!company && data?.companiesForCurrentUser?.[0])
@@ -144,6 +151,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [company, data, setCompany]);
 
   const defaultOpenKeys = getOpenKeys(pathname);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <Layout style={{ height: "100vh", overflow: "hidden" }}>
@@ -277,9 +288,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Layout.Header>
 
         {/* Content — the ONLY scroll zone in the right panel */}
-        <Layout.Content className={styles.content}>
-          {children}
-        </Layout.Content>
+        <Layout.Content className={styles.content}>{children}</Layout.Content>
       </Layout>
     </Layout>
   );

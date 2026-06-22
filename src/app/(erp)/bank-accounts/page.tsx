@@ -1,1 +1,4 @@
-import { MasterDataPage } from "@/features/master-data/MasterDataPage"; export default function Page() { return <MasterDataPage kind="bank-accounts" />; }
+import { MasterDataPage } from "@/features/master-data/MasterDataPage";
+export default function Page() {
+  return <MasterDataPage kind="bank-accounts" />;
+}

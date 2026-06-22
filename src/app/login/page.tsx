@@ -5,6 +5,8 @@ import { message } from "@/components/providers/AppProviders";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/stores/session-store";
 
+import { useEffect, useState } from "react";
+
 const LOGIN = gql`
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password) {
@@ -15,8 +17,21 @@ const LOGIN = gql`
 `;
 export default function LoginPage() {
   const router = useRouter();
+  const accessToken = useSessionStore((s) => s.accessToken);
   const setSession = useSessionStore((s) => s.setSession);
   const [login, { loading }] = useMutation(LOGIN);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && accessToken) {
+      router.replace("/dashboard");
+    }
+  }, [mounted, accessToken, router]);
+
   async function submit(values: { email: string; password: string }) {
     try {
       const { data } = await login({ variables: values });
@@ -26,6 +41,8 @@ export default function LoginPage() {
       message.error(error instanceof Error ? error.message : "Login failed");
     }
   }
+
+  if (!mounted) return null;
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6">
       <Card className="w-full max-w-md shadow-2xl">

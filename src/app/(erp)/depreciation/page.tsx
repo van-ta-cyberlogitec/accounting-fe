@@ -1,1 +1,4 @@
-import { SourceDocumentsPage } from "@/features/source-documents/SourceDocumentsPage"; export default function Page() { return <SourceDocumentsPage type="DEPRECIATION" />; }
+import { SourceDocumentsPage } from "@/features/source-documents/SourceDocumentsPage";
+export default function Page() {
+  return <SourceDocumentsPage type="DEPRECIATION" />;
+}

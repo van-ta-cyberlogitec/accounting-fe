@@ -41,9 +41,13 @@ export default function AdminPage() {
                   dataIndex: "active",
                   render: (v: boolean) =>
                     v ? (
-                      <CheckCircleFilled style={{ color: "#52c41a", fontSize: "16px" }} />
+                      <CheckCircleFilled
+                        style={{ color: "#52c41a", fontSize: "16px" }}
+                      />
                     ) : (
-                      <CloseCircleFilled style={{ color: "#bfbfbf", fontSize: "16px" }} />
+                      <CloseCircleFilled
+                        style={{ color: "#bfbfbf", fontSize: "16px" }}
+                      />
                     ),
                 },
               ]}
