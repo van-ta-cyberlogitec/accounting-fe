@@ -1,6 +1,7 @@
 "use client";
 import { gql, useMutation, useQuery } from "@apollo/client";
-import { Button, Card, Input, Modal, Space, Table, Tag, message } from "antd";
+import { Button, Card, Input, Modal, Space, Table, Tag } from "antd";
+import { message } from "@/components/providers/AppProviders";
 import { PageTitle } from "@/components/PageTitle";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -40,6 +41,15 @@ const REOPEN = gql`
     }
   }
 `;
+interface FiscalPeriod {
+  id: string;
+  year: number;
+  month: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
 export default function ClosingPage() {
   const company = useSessionStore((s) => s.company);
   const { data, loading, refetch } = useQuery(QUERY, {
@@ -68,18 +78,22 @@ export default function ClosingPage() {
         />
       ),
       onOk: async () => {
-        await reopen({
-          variables: { companyId: company?.id, periodId: id, reason },
-        });
-        refetch();
+        try {
+          await reopen({
+            variables: { companyId: company?.id, periodId: id, reason },
+          });
+          refetch();
+        } catch (e) {
+          message.error(e instanceof Error ? e.message : "Reopen failed");
+        }
       },
     });
   }
   return (
     <>
       <PageTitle
-        title="Month-End Closing"
-        description="Pre-close checks, balance snapshots, controlled reopen and immutable history."
+        title="Period Closing"
+        description="Manage fiscal periods, close books and view audit trail."
       />
       <Card>
         <Table
@@ -89,7 +103,7 @@ export default function ClosingPage() {
           columns={[
             {
               title: "Period",
-              render: (_: unknown, r: any) =>
+              render: (_: unknown, r: FiscalPeriod) =>
                 `${r.year}-${String(r.month).padStart(2, "0")}`,
             },
             { title: "Start", dataIndex: "startDate" },
@@ -103,7 +117,7 @@ export default function ClosingPage() {
             },
             {
               title: "Actions",
-              render: (_: unknown, r: any) => (
+              render: (_: unknown, r: FiscalPeriod) => (
                 <Space>
                   {r.status === "OPEN" ? (
                     <Button type="primary" onClick={() => closePeriod(r.id)}>

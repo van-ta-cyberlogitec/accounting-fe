@@ -10,8 +10,8 @@ import {
   Space,
   Table,
   Typography,
-  message,
 } from "antd";
+import { message } from "@/components/providers/AppProviders";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useSessionStore } from "@/stores/session-store";

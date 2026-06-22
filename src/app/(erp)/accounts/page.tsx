@@ -10,8 +10,9 @@ import {
   Space,
   Switch,
   Table,
-  message,
 } from "antd";
+import { message } from "@/components/providers/AppProviders";
+import { CheckCircleFilled, CloseCircleFilled } from "@ant-design/icons";
 import { useState } from "react";
 import { PageTitle } from "@/components/PageTitle";
 import { useSessionStore } from "@/stores/session-store";
@@ -76,7 +77,12 @@ export default function AccountsPage() {
     {
       title: "Active",
       dataIndex: "active",
-      render: (value: boolean) => <Switch checked={value} disabled />,
+      render: (value: boolean) =>
+        value ? (
+          <CheckCircleFilled style={{ color: "#52c41a", fontSize: "16px" }} />
+        ) : (
+          <CloseCircleFilled style={{ color: "#bfbfbf", fontSize: "16px" }} />
+        ),
     },
   ];
   return (

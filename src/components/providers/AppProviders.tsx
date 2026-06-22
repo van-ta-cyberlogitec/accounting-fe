@@ -6,9 +6,26 @@ import {
   InMemoryCache,
 } from "@apollo/client";
 import { App, ConfigProvider } from "antd";
+import type { MessageInstance } from "antd/es/message/interface";
+import type { NotificationInstance } from "antd/es/notification/interface";
+import type { ModalStaticFunctions } from "antd/es/modal/confirm";
 import { setContext } from "@apollo/client/link/context";
 import { useMemo } from "react";
 import { useSessionStore } from "@/stores/session-store";
+
+export let message: MessageInstance;
+export let notification: NotificationInstance;
+export let modal: Omit<ModalStaticFunctions, "warn">;
+
+function AntdAppHelper({ children }: { children: React.ReactNode }) {
+  const app = App.useApp();
+  
+  message = app.message;
+  notification = app.notification;
+  modal = app.modal;
+
+  return <>{children}</>;
+}
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const accessToken = useSessionStore((state) => state.accessToken);
@@ -37,8 +54,11 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       }}
     >
       <App>
-        <ApolloProvider client={client}>{children}</ApolloProvider>
+        <AntdAppHelper>
+          <ApolloProvider client={client}>{children}</ApolloProvider>
+        </AntdAppHelper>
       </App>
     </ConfigProvider>
   );
 }
+

@@ -10,8 +10,8 @@ import {
   Space,
   Table,
   Tag,
-  message,
 } from "antd";
+import { message } from "@/components/providers/AppProviders";
 import { useState } from "react";
 import { PageTitle } from "@/components/PageTitle";
 import { useSessionStore } from "@/stores/session-store";

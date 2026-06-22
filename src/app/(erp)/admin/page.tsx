@@ -1,6 +1,7 @@
 "use client";
 import { gql, useQuery } from "@apollo/client";
 import { Card, Col, Row, Table } from "antd";
+import { CheckCircleFilled, CloseCircleFilled } from "@ant-design/icons";
 import { PageTitle } from "@/components/PageTitle";
 const ADMIN = gql`
   query Admin {
@@ -38,7 +39,12 @@ export default function AdminPage() {
                 {
                   title: "Active",
                   dataIndex: "active",
-                  render: (v: boolean) => (v ? "Yes" : "No"),
+                  render: (v: boolean) =>
+                    v ? (
+                      <CheckCircleFilled style={{ color: "#52c41a", fontSize: "16px" }} />
+                    ) : (
+                      <CloseCircleFilled style={{ color: "#bfbfbf", fontSize: "16px" }} />
+                    ),
                 },
               ]}
             />

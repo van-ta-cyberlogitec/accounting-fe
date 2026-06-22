@@ -1,6 +1,7 @@
 "use client";
 import { gql, useMutation, useQuery } from "@apollo/client";
-import { Button, Card, Input, Modal, Space, Table, Tag, message } from "antd";
+import { Button, Card, Input, Modal, Space, Table, Tag } from "antd";
+import { message } from "@/components/providers/AppProviders";
 import { useState } from "react";
 import { PageTitle } from "@/components/PageTitle";
 import { useSessionStore } from "@/stores/session-store";

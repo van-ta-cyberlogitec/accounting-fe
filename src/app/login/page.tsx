@@ -1,6 +1,7 @@
 "use client";
 import { gql, useMutation } from "@apollo/client";
-import { Button, Card, Form, Input, Typography, message } from "antd";
+import { Button, Card, Form, Input, Typography } from "antd";
+import { message } from "@/components/providers/AppProviders";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/stores/session-store";
 
