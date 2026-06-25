@@ -6,12 +6,14 @@ import { useSessionStore } from "@/stores/session-store";
 const AUDIT = gql`
   query Audit($companyId: ID!) {
     auditEvents(companyId: $companyId) {
-      id
-      actorId
-      action
-      entityType
-      entityId
-      createdAt
+      items {
+        id
+        actorId
+        action
+        entityType
+        entityId
+        createdAt
+      }
     }
   }
 `;
@@ -31,7 +33,7 @@ export default function AuditPage() {
         <Table
           rowKey="id"
           loading={loading}
-          dataSource={data?.auditEvents ?? []}
+          dataSource={data?.auditEvents?.items ?? []}
           columns={[
             { title: "Time", dataIndex: "createdAt" },
             { title: "Action", dataIndex: "action" },

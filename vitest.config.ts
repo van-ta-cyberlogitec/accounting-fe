@@ -3,3 +3,4 @@ export default defineConfig({
   test: { environment: "jsdom" },
   resolve: { alias: { "@": new URL("./src", import.meta.url).pathname } },
 });
+

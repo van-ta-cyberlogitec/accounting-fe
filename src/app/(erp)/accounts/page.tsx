@@ -20,15 +20,17 @@ import { useSessionStore } from "@/stores/session-store";
 const ACCOUNTS = gql`
   query Accounts($companyId: ID!, $search: String) {
     accountsByCompany(companyId: $companyId, search: $search) {
-      id
-      code
-      name
-      parentId
-      nature
-      isPosting
-      validFrom
-      validTo
-      active
+      items {
+        id
+        code
+        name
+        parentId
+        nature
+        isPosting
+        validFrom
+        validTo
+        active
+      }
     }
   }
 `;
@@ -115,7 +117,7 @@ export default function AccountsPage() {
         <Table
           rowKey="id"
           loading={loading}
-          dataSource={data?.accountsByCompany ?? []}
+          dataSource={data?.accountsByCompany?.items ?? []}
           columns={columns}
           onRow={(record) => ({
             onDoubleClick: () => {
@@ -165,7 +167,7 @@ export default function AccountsPage() {
                 allowClear
                 showSearch
                 optionFilterProp="label"
-                options={(data?.accountsByCompany ?? []).map(
+                options={(data?.accountsByCompany?.items ?? []).map(
                   (a: { id: string; code: string; name: string }) => ({
                     value: a.id,
                     label: `${a.code} - ${a.name}`,

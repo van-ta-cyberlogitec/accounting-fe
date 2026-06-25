@@ -12,18 +12,22 @@ import { useSessionStore } from "@/stores/session-store";
 const QUERY = gql`
   query EInvoices($companyId: ID!) {
     eInvoices(companyId: $companyId) {
-      id
-      receivableId
-      requestKey
-      providerReference
-      status
-      lookupUrl
-      attemptCount
+      items {
+        id
+        receivableId
+        requestKey
+        providerReference
+        status
+        lookupUrl
+        attemptCount
+      }
     }
     sourceDocuments(companyId: $companyId, type: RECEIVABLE) {
-      id
-      documentNumber
-      description
+      items {
+        id
+        documentNumber
+        description
+      }
     }
   }
 `;
@@ -101,7 +105,7 @@ export default function EInvoicesPage() {
               placeholder="Select receivable"
               value={receivableId}
               onChange={setReceivableId}
-              options={(data?.sourceDocuments ?? []).map((document: any) => ({
+              options={(data?.sourceDocuments?.items ?? []).map((document: any) => ({
                 value: document.id,
                 label: `${document.documentNumber} - ${document.description}`,
               }))}
@@ -131,7 +135,7 @@ export default function EInvoicesPage() {
         <Table
           rowKey="id"
           loading={loading}
-          dataSource={data?.eInvoices ?? []}
+          dataSource={data?.eInvoices?.items ?? []}
           columns={[
             { title: "Request Key", dataIndex: "requestKey" },
             { title: "Provider Ref", dataIndex: "providerReference" },

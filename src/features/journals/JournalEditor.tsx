@@ -20,11 +20,13 @@ import { journalTotals } from "./journal-totals";
 const ACCOUNTS = gql`
   query JournalAccounts($companyId: ID!) {
     accountsByCompany(companyId: $companyId) {
-      id
-      code
-      name
-      isPosting
-      active
+      items {
+        id
+        code
+        name
+        isPosting
+        active
+      }
     }
   }
 `;
@@ -127,7 +129,7 @@ export function JournalEditor() {
       router.push("/journals");
     }
   }
-  const accountOptions = (data?.accountsByCompany ?? [])
+  const accountOptions = (data?.accountsByCompany?.items ?? [])
     .filter(
       (a: { isPosting: boolean; active: boolean }) => a.isPosting && a.active,
     )

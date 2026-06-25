@@ -1,18 +1,36 @@
 "use client";
 import { gql, useMutation, useQuery } from "@apollo/client";
-import { Button, Card, Input, Modal, Space, Table, Tag } from "antd";
+import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tag } from "antd";
 import { message } from "@/components/providers/AppProviders";
 import { useState } from "react";
 import { PageTitle } from "@/components/PageTitle";
 import { useSessionStore } from "@/stores/session-store";
+
+const PARTNERS = gql`
+  query ListPartners($companyId: ID!) {
+    partnersByCompany(companyId: $companyId) {
+      items {
+        id
+        code
+        name
+      }
+    }
+  }
+`;
+
 const JOURNALS = gql`
-  query ApprovalJournals($companyId: ID!) {
-    journalsByCompany(companyId: $companyId) {
-      id
-      journalNumber
-      accountingDate
-      description
-      status
+  query ApprovalJournals($companyId: ID!, $filters: JournalFilterInput) {
+    journalsByCompany(companyId: $companyId, filters: $filters) {
+      items {
+        id
+        journalNumber
+        accountingDate
+        description
+        status
+      }
+      pagination {
+        totalCount
+      }
     }
   }
 `;
@@ -42,10 +60,31 @@ const REVERSE = gql`
 `;
 export default function ApprovalsPage() {
   const company = useSessionStore((s) => s.company);
-  const { data, refetch } = useQuery(JOURNALS, {
+  const [dateRange, setDateRange] = useState<[any, any] | null>(null);
+  const [partnerId, setPartnerId] = useState<string>();
+  const [voucher, setVoucher] = useState("");
+  const [status, setStatus] = useState<string>();
+  const [limit, setLimit] = useState<number>();
+  const [appliedFilters, setAppliedFilters] = useState<{
+    startDate?: string;
+    endDate?: string;
+    partnerId?: string;
+    journalNumber?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }>({});
+
+  const { data: partnersData } = useQuery(PARTNERS, {
     variables: { companyId: company?.id },
     skip: !company,
   });
+
+  const { data, loading, refetch } = useQuery(JOURNALS, {
+    variables: { companyId: company?.id, filters: appliedFilters },
+    skip: !company,
+  });
+
   const [post] = useMutation(POST);
   const [reject] = useMutation(REJECT);
   const [reverse] = useMutation(REVERSE);
@@ -74,6 +113,24 @@ export default function ApprovalsPage() {
     setReason("");
     refetch();
   }
+
+  const handleSearch = () => {
+    setAppliedFilters({
+      startDate: dateRange?.[0]?.format("YYYY-MM-DD"),
+      endDate: dateRange?.[1]?.format("YYYY-MM-DD"),
+      partnerId: partnerId || undefined,
+      journalNumber: voucher || undefined,
+      status: status || undefined,
+      limit: limit || undefined,
+      offset: 0,
+    });
+  };
+
+  const partnerOptions = (partnersData?.partnersByCompany?.items ?? []).map((p: any) => ({
+    value: p.id,
+    label: `${p.code} - ${p.name}`,
+  }));
+
   return (
     <>
       <PageTitle
@@ -81,9 +138,65 @@ export default function ApprovalsPage() {
         description="Managers approve confirmed slips. Cancelling an approved slip creates an auditable reversal."
       />
       <Card>
+        <Space wrap className="mb-4">
+          <DatePicker.RangePicker
+            value={dateRange}
+            onChange={(val) => setDateRange(val as any)}
+          />
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder="Partner"
+            className="w-48"
+            options={partnerOptions}
+            value={partnerId}
+            onChange={setPartnerId}
+          />
+          <Input
+            placeholder="Voucher no / Seq"
+            value={voucher}
+            onChange={(e) => setVoucher(e.target.value)}
+          />
+          <Select
+            allowClear
+            placeholder="Status"
+            className="w-36"
+            options={["SUBMITTED", "POSTED"].map((value) => ({
+              value,
+            }))}
+            value={status}
+            onChange={setStatus}
+          />
+          <Select
+            allowClear
+            placeholder="Limit"
+            className="w-28"
+            options={[10, 20, 50, 100].map((val) => ({
+              value: val,
+              label: `${val} items`,
+            }))}
+            value={limit}
+            onChange={setLimit}
+          />
+          <Button onClick={handleSearch}>Search</Button>
+        </Space>
         <Table
           rowKey="id"
-          dataSource={data?.journalsByCompany ?? []}
+          loading={loading}
+          dataSource={data?.journalsByCompany?.items ?? []}
+          pagination={{
+            pageSize: appliedFilters.limit || 10,
+            current: Math.floor((appliedFilters.offset || 0) / (appliedFilters.limit || 10)) + 1,
+            total: data?.journalsByCompany?.pagination?.totalCount,
+            onChange: (page, pageSize) => {
+              setAppliedFilters((prev) => ({
+                ...prev,
+                offset: (page - 1) * pageSize,
+                limit: pageSize,
+              }));
+            },
+          }}
           columns={[
             { title: "Voucher No", dataIndex: "journalNumber" },
             { title: "Date", dataIndex: "accountingDate" },

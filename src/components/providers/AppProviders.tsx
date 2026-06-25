@@ -73,6 +73,11 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     return new ApolloClient({
       link: errorLink.concat(authLink).concat(httpLink),
       cache: new InMemoryCache(),
+      defaultOptions: {
+        watchQuery: {
+          notifyOnNetworkStatusChange: true,
+        },
+      },
     });
   }, []);
   return (

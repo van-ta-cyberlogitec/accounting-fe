@@ -25,14 +25,16 @@ const configs = {
     query: gql`
       query Partners($companyId: ID!, $search: String) {
         partnersByCompany(companyId: $companyId, search: $search) {
-          id
-          code
-          name
-          type
-          taxCode
-          email
-          paymentTerms
-          active
+          items {
+            id
+            code
+            name
+            type
+            taxCode
+            email
+            paymentTerms
+            active
+          }
         }
       }
     `,
@@ -101,10 +103,12 @@ const configs = {
     query: gql`
       query ExchangeRates($companyId: ID!) {
         exchangeRatesByCompany(companyId: $companyId) {
-          id
-          currency
-          rateDate
-          rate
+          items {
+            id
+            currency
+            rateDate
+            rate
+          }
         }
       }
     `,
@@ -124,13 +128,15 @@ const configs = {
     query: gql`
       query BankAccounts($companyId: ID!, $search: String) {
         bankAccountsByCompany(companyId: $companyId, search: $search) {
-          id
-          code
-          name
-          bankName
-          accountNumber
-          currency
-          active
+          items {
+            id
+            code
+            name
+            bankName
+            accountNumber
+            currency
+            active
+          }
         }
       }
     `,
@@ -172,7 +178,7 @@ export function MasterDataPage({ kind }: { kind: Kind }) {
     skip: !company,
   });
   const [save] = useMutation(config.mutation);
-  const rows = (data?.[config.queryKey] ?? []) as Record<string, unknown>[];
+  const rows = ((data?.[config.queryKey] as any)?.items ?? data?.[config.queryKey] ?? []) as Record<string, unknown>[];
   async function submit(values: Record<string, unknown>) {
     try {
       await save({

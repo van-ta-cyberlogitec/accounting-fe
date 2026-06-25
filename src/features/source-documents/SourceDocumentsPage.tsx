@@ -22,39 +22,45 @@ import { useSessionStore } from "@/stores/session-store";
 const LIST = gql`
   query SourceDocuments($companyId: ID!, $type: SourceDocumentType!) {
     sourceDocuments(companyId: $companyId, type: $type) {
-      id
-      documentNumber
-      documentDate
-      accountingDate
-      description
-      status
-      currency
-      totalAmount
-      partnerId
-      voucherType
-      paymentMethod
-      bankAccountId
-      journalId
-      lines {
+      items {
         id
-        accountId
+        documentNumber
+        documentDate
+        accountingDate
         description
-        debit
-        credit
+        status
+        currency
+        totalAmount
         partnerId
-        profitCenterId
-        employeeCode
+        voucherType
+        paymentMethod
+        bankAccountId
+        journalId
+        lines {
+          id
+          accountId
+          description
+          debit
+          credit
+          partnerId
+          profitCenterId
+          employeeCode
+        }
       }
     }
     accountsByCompany(companyId: $companyId) {
-      id
-      code
-      name
+      items {
+        id
+        code
+        name
+      }
     }
     partnersByCompany(companyId: $companyId) {
-      id
-      code
-      name
+      items {
+        id
+        code
+        name
+      }
     }
   }
 `;
@@ -127,11 +133,11 @@ export function SourceDocumentsPage({
   const [approve] = useMutation(APPROVE);
   const [reject] = useMutation(REJECT);
   const [cancel] = useMutation(CANCEL);
-  const options = (data?.accountsByCompany ?? []).map((a: any) => ({
+  const options = (data?.accountsByCompany?.items ?? []).map((a: any) => ({
     value: a.id,
     label: `${a.code} - ${a.name}`,
   }));
-  const partnerOptions = (data?.partnersByCompany ?? []).map((p: any) => ({
+  const partnerOptions = (data?.partnersByCompany?.items ?? []).map((p: any) => ({
     value: p.id,
     label: `${p.code} - ${p.name}`,
   }));
@@ -229,7 +235,7 @@ export function SourceDocumentsPage({
         <Table
           rowKey="id"
           loading={loading}
-          dataSource={data?.sourceDocuments ?? []}
+          dataSource={data?.sourceDocuments?.items ?? []}
           pagination={{ pageSize: 10 }}
           columns={[
             { title: "Document No", dataIndex: "documentNumber" },

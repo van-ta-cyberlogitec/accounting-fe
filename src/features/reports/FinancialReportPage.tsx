@@ -44,13 +44,15 @@ const TRIAL = gql`
 const REFERENCES = gql`
   query References($companyId: ID!) {
     journalReferences(companyId: $companyId) {
-      sourceId
-      sourceType
-      documentNumber
-      description
-      journalId
-      journalNumber
-      status
+      items {
+        sourceId
+        sourceType
+        documentNumber
+        description
+        journalId
+        journalNumber
+        status
+      }
     }
   }
 `;
@@ -101,7 +103,7 @@ export function FinancialReportPage({
 
   let rows =
     report === "REFERENCES"
-      ? (data?.journalReferences ?? [])
+      ? (data?.journalReferences?.items ?? [])
       : ["PNL", "VAT"].includes(report)
         ? (data?.trialBalance ?? [])
         : (data?.dimensionBalance ?? []);

@@ -19,24 +19,28 @@ import { useSessionStore } from "@/stores/session-store";
 const QUERY = gql`
   query FixedAssets($companyId: ID!) {
     fixedAssets(companyId: $companyId) {
-      id
-      assetCode
-      name
-      acquisitionDate
-      cost
-      residualValue
-      usefulLifeMonths
-      accumulatedDepreciation
-      status
-      assetAccountId
-      depreciationAccountId
-      accumulatedAccountId
-      profitCenterId
+      items {
+        id
+        assetCode
+        name
+        acquisitionDate
+        cost
+        residualValue
+        usefulLifeMonths
+        accumulatedDepreciation
+        status
+        assetAccountId
+        depreciationAccountId
+        accumulatedAccountId
+        profitCenterId
+      }
     }
     accountsByCompany(companyId: $companyId) {
-      id
-      code
-      name
+      items {
+        id
+        code
+        name
+      }
     }
     profitCentersByCompany(companyId: $companyId) {
       id
@@ -62,7 +66,7 @@ export default function FixedAssetsPage() {
     skip: !company,
   });
   const [save] = useMutation(SAVE);
-  const accounts = (data?.accountsByCompany ?? []).map((a: any) => ({
+  const accounts = (data?.accountsByCompany?.items ?? []).map((a: any) => ({
     value: a.id,
     label: `${a.code} - ${a.name}`,
   }));
@@ -110,7 +114,7 @@ export default function FixedAssetsPage() {
         <Table
           rowKey="id"
           loading={loading}
-          dataSource={data?.fixedAssets ?? []}
+          dataSource={data?.fixedAssets?.items ?? []}
           pagination={{ pageSize: 10 }}
           columns={[
             { title: "Asset Code", dataIndex: "assetCode" },
