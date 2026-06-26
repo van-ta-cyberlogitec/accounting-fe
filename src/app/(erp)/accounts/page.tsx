@@ -9,13 +9,13 @@ import {
   Select,
   Space,
   Switch,
-  Table,
 } from "antd";
 import { message } from "@/components/providers/AppProviders";
-import { CheckCircleFilled, CloseCircleFilled } from "@ant-design/icons";
+import { CheckCircleFilled, CloseCircleFilled, PlusOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { PageTitle } from "@/components/PageTitle";
 import { useSessionStore } from "@/stores/session-store";
+import { EditableTable, useEditableTable, EditableColumnType } from "@/components/editable-table";
 
 const ACCOUNTS = gql`
   query Accounts($companyId: ID!, $search: String) {
@@ -34,6 +34,7 @@ const ACCOUNTS = gql`
     }
   }
 `;
+
 const SAVE = gql`
   mutation SaveAccount($input: AccountInput!, $id: ID) {
     saveAccount(input: $input, id: $id) {
@@ -41,6 +42,7 @@ const SAVE = gql`
     }
   }
 `;
+
 export default function AccountsPage() {
   const company = useSessionStore((s) => s.company);
   const [search, setSearch] = useState("");
@@ -52,12 +54,42 @@ export default function AccountsPage() {
     skip: !company,
   });
   const [save] = useMutation(SAVE);
+  const editableHook = useEditableTable();
+
+  function cleanAccountInput(values: Record<string, any>) {
+    return {
+      companyId: company?.id,
+      code: values.code,
+      name: values.name,
+      nature: values.nature,
+      parentId: values.parentId || null,
+      validFrom: values.validFrom,
+      validTo: values.validTo || null,
+      isPosting: values.isPosting ?? true,
+    };
+  }
+
+  async function handleInlineSave(id: string | number, values: Record<string, unknown>) {
+    try {
+      await save({
+        variables: {
+          id: id,
+          input: cleanAccountInput(values),
+        },
+      });
+      message.success("Account saved");
+      await refetch();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : "Save failed");
+    }
+  }
+
   async function submit(values: Record<string, unknown>) {
     try {
       await save({
         variables: {
           id: editing?.id,
-          input: { ...values, companyId: company?.id },
+          input: cleanAccountInput(values),
         },
       });
       message.success("Account saved");
@@ -67,18 +99,68 @@ export default function AccountsPage() {
       message.error(e instanceof Error ? e.message : "Save failed");
     }
   }
-  const columns = [
-    { title: "Account Code", dataIndex: "code" },
-    { title: "Account Name", dataIndex: "name" },
-    { title: "Nature", dataIndex: "nature" },
+
+  const handleAddNew = () => {
+    setEditing(null);
+    form.resetFields();
+    setOpen(true);
+  };
+
+  const extraFloatingActions = [
+    {
+      key: "add-new",
+      label: "Add New",
+      icon: <PlusOutlined />,
+      type: "primary" as const,
+      onClick: handleAddNew,
+    },
+  ];
+
+  const parentOptions = (data?.accountsByCompany?.items ?? []).map(
+    (a: { id: string; code: string; name: string }) => ({
+      value: a.id,
+      label: `${a.code} - ${a.name}`,
+    })
+  );
+
+  const columns: EditableColumnType<any>[] = [
+    { title: "Account Code", dataIndex: "code", editable: true, required: true },
+    { title: "Account Name", dataIndex: "name", editable: true, required: true },
+    {
+      title: "Nature",
+      dataIndex: "nature",
+      editable: true,
+      inputType: "select" as const,
+      inputProps: {
+        options: [{ value: "DEBIT", label: "DEBIT" }, { value: "CREDIT", label: "CREDIT" }],
+      },
+      required: true,
+    },
+    {
+      title: "Parent Account",
+      dataIndex: "parentId",
+      editable: true,
+      inputType: "select" as const,
+      inputProps: {
+        allowClear: true,
+        showSearch: true,
+        optionFilterProp: "label",
+        options: parentOptions,
+      },
+    },
+    { title: "Valid From", dataIndex: "validFrom", editable: true, inputType: "date" as const, required: true },
+    { title: "Valid To", dataIndex: "validTo", editable: true, inputType: "date" as const },
+    { title: "Posting Account", dataIndex: "isPosting", editable: true, inputType: "switch" as const },
     {
       title: "Level",
+      editable: false,
       render: (_: unknown, row: { parentId?: string }) =>
         row.parentId ? "Posting / Child" : "Parent",
     },
     {
       title: "Active",
       dataIndex: "active",
+      editable: false,
       render: (value: boolean) =>
         value ? (
           <CheckCircleFilled style={{ color: "#52c41a", fontSize: "16px" }} />
@@ -87,6 +169,7 @@ export default function AccountsPage() {
         ),
     },
   ];
+
   return (
     <>
       <PageTitle
@@ -95,11 +178,7 @@ export default function AccountsPage() {
         actions={
           <Button
             type="primary"
-            onClick={() => {
-              setEditing(null);
-              form.resetFields();
-              setOpen(true);
-            }}
+            onClick={handleAddNew}
           >
             Add New
           </Button>
@@ -114,18 +193,15 @@ export default function AccountsPage() {
           />
           <Button onClick={() => refetch()}>Search</Button>
         </Space>
-        <Table
+        <EditableTable
           rowKey="id"
           loading={loading}
           dataSource={data?.accountsByCompany?.items ?? []}
+          pagination={{ pageSize: 10 }}
+          editableHook={editableHook}
+          onSave={handleInlineSave}
           columns={columns}
-          onRow={(record) => ({
-            onDoubleClick: () => {
-              setEditing(record);
-              form.setFieldsValue(record);
-              setOpen(true);
-            },
-          })}
+          extraFloatingActions={extraFloatingActions}
         />
       </Card>
       <Modal
@@ -167,12 +243,7 @@ export default function AccountsPage() {
                 allowClear
                 showSearch
                 optionFilterProp="label"
-                options={(data?.accountsByCompany?.items ?? []).map(
-                  (a: { id: string; code: string; name: string }) => ({
-                    value: a.id,
-                    label: `${a.code} - ${a.name}`,
-                  }),
-                )}
+                options={parentOptions}
               />
             </Form.Item>
             <Form.Item

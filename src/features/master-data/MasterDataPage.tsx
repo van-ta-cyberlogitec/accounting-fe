@@ -9,13 +9,13 @@ import {
   Select,
   Space,
   Switch,
-  Table,
 } from "antd";
 import { message } from "@/components/providers/AppProviders";
-import { CheckCircleFilled, CloseCircleFilled } from "@ant-design/icons";
-import { useState } from "react";
+import { CheckCircleFilled, CloseCircleFilled, PlusOutlined } from "@ant-design/icons";
+import { useState, useEffect } from "react";
 import { PageTitle } from "@/components/PageTitle";
 import { useSessionStore } from "@/stores/session-store";
+import { EditableTable, useEditableTable } from "@/components/editable-table";
 
 const configs = {
   partners: {
@@ -178,17 +178,82 @@ export function MasterDataPage({ kind }: { kind: Kind }) {
     skip: !company,
   });
   const [save] = useMutation(config.mutation);
-  const rows = ((data?.[config.queryKey] as any)?.items ?? data?.[config.queryKey] ?? []) as Record<string, unknown>[];
+  const rows = ((data?.[config.queryKey] as any)?.items ?? data?.[config.queryKey] ?? []) as (Record<string, unknown> & { id: string })[];
+
+  const [tempRow, setTempRow] = useState<any | null>(null);
+  const displayRows = tempRow ? [tempRow, ...rows] : rows;
+
+  const editableHook = useEditableTable();
+
+  useEffect(() => {
+    if (tempRow && !editableHook.editingKeys.includes("__new__")) {
+      setTempRow(null);
+    }
+  }, [editableHook.editingKeys, tempRow]);
+
+  function cleanInput(values: Record<string, any>) {
+    const input: Record<string, any> = {
+      companyId: company?.id,
+    };
+    if (kind !== "exchange-rates") {
+      input.active = values.active ?? true;
+    }
+    config.fields.forEach((field) => {
+      if (field in values) {
+        input[field] = values[field];
+      }
+    });
+    return input;
+  }
+
+  async function handleInlineSave(id: string | number, values: Record<string, unknown>) {
+    try {
+      const isNew = id === "__new__";
+      await save({
+        variables: {
+          id: isNew ? undefined : id,
+          input: cleanInput({
+            ...values,
+            active: values.active ?? true,
+          }),
+        },
+      });
+      message.success("Saved");
+      if (isNew) {
+        setTempRow(null);
+      }
+      await refetch();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "Save failed");
+    }
+  }
+
+  async function handleDelete(id: string | number) {
+    try {
+      const record = rows.find((r) => r.id === id);
+      if (!record) return;
+      await save({
+        variables: {
+          id: id,
+          input: {
+            ...cleanInput(record),
+            active: false,
+          },
+        },
+      });
+      message.success("Deactivated");
+      await refetch();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "Delete failed");
+    }
+  }
+
   async function submit(values: Record<string, unknown>) {
     try {
       await save({
         variables: {
           id: editing?.id,
-          input: {
-            ...values,
-            companyId: company?.id,
-            active: values.active ?? true,
-          },
+          input: cleanInput(values),
         },
       });
       message.success("Saved");
@@ -198,6 +263,78 @@ export function MasterDataPage({ kind }: { kind: Kind }) {
       message.error(error instanceof Error ? error.message : "Save failed");
     }
   }
+
+  const handleAddNew = () => {
+    if (kind === "pl-units") {
+      const newRow = { id: "__new__", code: "", name: "", active: true };
+      setTempRow(newRow);
+      editableHook.startEdit(newRow);
+    } else {
+      setEditing(null);
+      form.resetFields();
+      form.setFieldsValue({
+        active: true,
+        type: "BOTH",
+        currency: "VND",
+      });
+      setOpen(true);
+    }
+  };
+
+  const extraFloatingActions = [
+    {
+      key: "add-new",
+      label: "Add New",
+      icon: <PlusOutlined />,
+      type: "primary" as const,
+      onClick: handleAddNew,
+    },
+  ];
+
+  const editableColumns = [
+    ...config.fields.map((field) => ({
+      title: labels[field] ?? field,
+      dataIndex: field,
+      editable: true,
+      inputType: (field === "rateDate" ? "date" : field === "rate" ? "number" : field === "type" ? "select" : "text") as any,
+      required: [
+        "code",
+        "name",
+        "currency",
+        "rateDate",
+        "rate",
+        "bankName",
+        "accountNumber",
+      ].includes(field),
+      inputProps: field === "type" ? {
+        options: ["CUSTOMER", "SUPPLIER", "BOTH"].map((value) => ({
+          value,
+          label: value,
+        })),
+      } : undefined,
+    })),
+    ...(kind === "exchange-rates"
+      ? []
+      : [
+          {
+            title: "Active",
+            dataIndex: "active",
+            editable: true,
+            inputType: "switch" as const,
+            render: (v: boolean) =>
+              v ? (
+                <CheckCircleFilled
+                  style={{ color: "#52c41a", fontSize: "16px" }}
+                />
+              ) : (
+                <CloseCircleFilled
+                  style={{ color: "#bfbfbf", fontSize: "16px" }}
+                />
+              ),
+          },
+        ]),
+  ];
+
   return (
     <>
       <PageTitle
@@ -206,16 +343,7 @@ export function MasterDataPage({ kind }: { kind: Kind }) {
         actions={
           <Button
             type="primary"
-            onClick={() => {
-              setEditing(null);
-              form.resetFields();
-              form.setFieldsValue({
-                active: true,
-                type: "BOTH",
-                currency: "VND",
-              });
-              setOpen(true);
-            }}
+            onClick={handleAddNew}
           >
             Add New
           </Button>
@@ -230,42 +358,17 @@ export function MasterDataPage({ kind }: { kind: Kind }) {
           />
           <Button onClick={() => refetch()}>Search</Button>
         </Space>
-        <Table
+        <EditableTable
           rowKey="id"
           loading={loading}
-          dataSource={rows}
+          dataSource={displayRows}
           pagination={{ pageSize: 10 }}
-          columns={[
-            ...config.fields.map((field) => ({
-              title: labels[field] ?? field,
-              dataIndex: field,
-            })),
-            ...(kind === "exchange-rates"
-              ? []
-              : [
-                  {
-                    title: "Active",
-                    dataIndex: "active",
-                    render: (v: boolean) =>
-                      v ? (
-                        <CheckCircleFilled
-                          style={{ color: "#52c41a", fontSize: "16px" }}
-                        />
-                      ) : (
-                        <CloseCircleFilled
-                          style={{ color: "#bfbfbf", fontSize: "16px" }}
-                        />
-                      ),
-                  },
-                ]),
-          ]}
-          onRow={(record) => ({
-            onDoubleClick: () => {
-              setEditing(record);
-              form.setFieldsValue(record);
-              setOpen(true);
-            },
-          })}
+          editableHook={editableHook}
+          onSave={handleInlineSave}
+          columns={editableColumns}
+          extraFloatingActions={extraFloatingActions}
+          showDelete={kind === "pl-units"}
+          onDelete={handleDelete}
         />
       </Card>
       <Modal
