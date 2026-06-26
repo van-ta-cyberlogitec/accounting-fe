@@ -1,6 +1,16 @@
 "use client";
 import { gql, useMutation, useQuery } from "@apollo/client";
-import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tag } from "antd";
+import {
+  Button,
+  Card,
+  DatePicker,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Table,
+  Tag,
+} from "antd";
 import { message } from "@/components/providers/AppProviders";
 import { useState } from "react";
 import { PageTitle } from "@/components/PageTitle";
@@ -89,6 +99,7 @@ export default function ApprovalsPage() {
   const [reject] = useMutation(REJECT);
   const [reverse] = useMutation(REVERSE);
   const [reason, setReason] = useState("");
+
   async function run(kind: string, id: string) {
     if (!company) return;
     if (kind === "post")
@@ -126,10 +137,12 @@ export default function ApprovalsPage() {
     });
   };
 
-  const partnerOptions = (partnersData?.partnersByCompany?.items ?? []).map((p: any) => ({
-    value: p.id,
-    label: `${p.code} - ${p.name}`,
-  }));
+  const partnerOptions = (partnersData?.partnersByCompany?.items ?? []).map(
+    (p: any) => ({
+      value: p.id,
+      label: `${p.code} - ${p.name}`,
+    }),
+  );
 
   return (
     <>
@@ -187,9 +200,13 @@ export default function ApprovalsPage() {
           dataSource={data?.journalsByCompany?.items ?? []}
           pagination={{
             pageSize: appliedFilters.limit || 10,
-            current: Math.floor((appliedFilters.offset || 0) / (appliedFilters.limit || 10)) + 1,
+            current:
+              Math.floor(
+                (appliedFilters.offset || 0) / (appliedFilters.limit || 10),
+              ) + 1,
             total: data?.journalsByCompany?.pagination?.totalCount,
             onChange: (page, pageSize) => {
+              console.log("page", page, "pageSize", pageSize);
               setAppliedFilters((prev) => ({
                 ...prev,
                 offset: (page - 1) * pageSize,
